@@ -6,9 +6,9 @@ import (
 	"api/src/repositorios"
 	"api/src/respostas"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 func CriarUsuario(w http.ResponseWriter, r *http.Request) {
@@ -24,6 +24,11 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if erro = usuario.Preparar(); erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
 	db, erro := banco.Conectar()
 	if erro != nil {
 		respostas.Erro(w, http.StatusInternalServerError, erro)
@@ -32,18 +37,35 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	repositorio := repositorios.NovoRepositorioDeUsuarios(db)
-	usuarioID, erro := repositorio.Criar(usuario)
+	usuario.ID, erro = repositorio.Criar(usuario)
 	if erro != nil {
 		respostas.Erro(w, http.StatusInternalServerError, erro)
 		return
 	}
 
-	w.Write([]byte(fmt.Sprintf("Id inserido: %d", usuarioID)))
+	respostas.JSON(w, http.StatusCreated, usuario)
 
 }
 
 func BuscarUsuarios(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Buscando todos os usuários"))
+	nomeOuNick := strings.ToLower(r.URL.Query().Get("usuario"))
+
+	db, erro := banco.Conectar()
+	if erro != nil {
+		respostas.Erro(w, http.StatusInternalServerError, erro)
+		return
+	}
+	defer db.Close()
+
+	repositorio := repositorios.NovoRepositorioDeUsuarios(db)
+	usuarios, erro := repositorio.Buscar(nomeOuNick)
+	if erro != nil {
+		respostas.Erro(w, http.StatusInternalServerError, erro)
+		return
+	}
+
+	respostas.JSON(w, http.StatusOK, usuarios)
+
 }
 
 func BuscarUsuario(w http.ResponseWriter, r *http.Request) {
