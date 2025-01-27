@@ -18,6 +18,7 @@ import (
 )
 
 func CriarUsuario(w http.ResponseWriter, r *http.Request) {
+
 	corpoRequest, erro := io.ReadAll(r.Body)
 	if erro != nil {
 		respostas.Erro(w, http.StatusUnprocessableEntity, erro)
